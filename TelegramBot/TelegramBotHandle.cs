@@ -16,10 +16,11 @@ namespace TelegramBot
     public class TelegramBotHandle
     {
         private static TelegramBotClient Bot;
-        
+
         public TelegramBotHandle(TelegramBotClient bot) => Bot = bot;
 
-        public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update,
+            CancellationToken cancellationToken)
         {
             var handler = update.Type switch
             {
@@ -41,28 +42,32 @@ namespace TelegramBot
             {
                 await handler;
             }
+
             catch (Exception exception)
             {
                 await HandleErrorAsync(botClient, exception, cancellationToken);
             }
         }
-        
-        public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+
+        public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception,
+            CancellationToken cancellationToken)
         {
             var errorMessage = exception switch
             {
-                ApiRequestException apiRequestException => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                ApiRequestException apiRequestException =>
+                    $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
                 _ => exception.ToString()
             };
-
-            await new Task(() => Console.WriteLine(errorMessage));
+            
+            var error = new Task(() =>  Console.WriteLine(errorMessage));
+            await error;
         }
         
         private static async Task BotOnMessageReceived(Message message)
         {
             Console.WriteLine($"Receive message type: {message.Type}");
-            if (message.Type != MessageType.Text)
-                return;
+
+            if (message.Type != MessageType.Text) return;
 
             var action = message.Text.Split(' ').First() switch
             {
@@ -72,31 +77,23 @@ namespace TelegramBot
                 "/request" => RequestContactAndLocation(message),
                 _ => Usage(message)
             };
+
             await action;
 
             static async Task SendInlineKeyboard(Message message)
             {
                 await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-                
+
                 var inlineKeyboard = new InlineKeyboardMarkup(new[]
                 {
-                    new []
+                    new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("1.1", "11"),
-                        InlineKeyboardButton.WithCallbackData("1.2", "12"),
+                        InlineKeyboardButton.WithCallbackData("firstButton", "11"),
+                        InlineKeyboardButton.WithCallbackData("secondButton", "12"),
                     },
-                    new []
-                    {
-                        InlineKeyboardButton.WithCallbackData("2.1", "21"),
-                        InlineKeyboardButton.WithCallbackData("2.2", "22"),
-                    }
                 });
-                
-                await Bot.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: "Choose",
-                    replyMarkup: inlineKeyboard
-                );
+
+                await Bot.SendTextMessageAsync(chatId: message.Chat.Id, text: "Choose", replyMarkup: inlineKeyboard);
             }
 
             static async Task SendReplyKeyboard(Message message)
@@ -104,8 +101,8 @@ namespace TelegramBot
                 var replyKeyboardMarkup = new ReplyKeyboardMarkup(
                     new[]
                     {
-                        new KeyboardButton[] { "1.1", "1.2" },
-                        new KeyboardButton[] { "2.1", "2.2" },
+                        new KeyboardButton[] {"1.1", "1.2"},
+                        new KeyboardButton[] {"2.1", "2.2"},
                     },
                     resizeKeyboard: true
                 );
@@ -114,7 +111,6 @@ namespace TelegramBot
                     chatId: message.Chat.Id,
                     text: "Choose",
                     replyMarkup: replyKeyboardMarkup
-
                 );
             }
 
@@ -122,13 +118,13 @@ namespace TelegramBot
             {
                 await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
 
-                const string filePath = @"Files/tux.png";
+                const string filePath = @"C:\Users\shady\RiderProjects\TelegramBot\pic.jpg";
                 await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var fileName = filePath.Split(Path.DirectorySeparatorChar).Last();
                 await Bot.SendPhotoAsync(
                     chatId: message.Chat.Id,
                     photo: new InputOnlineFile(fileStream, fileName),
-                    caption: "Nice Picture"
+                    caption: "Nice cock"
                 );
             }
 
@@ -149,10 +145,10 @@ namespace TelegramBot
             static async Task Usage(Message message)
             {
                 const string usage = "Usage:\n" +
-                                        "/inline   - send inline keyboard\n" +
-                                        "/keyboard - send custom keyboard\n" +
-                                        "/photo    - send a photo\n" +
-                                        "/request  - request location or contact";
+                                     "/inline   - send inline keyboard\n" +
+                                     "/keyboard - send custom keyboard\n" +
+                                     "/photo    - send a photo\n" +
+                                     "/request  - request location or contact";
                 await Bot.SendTextMessageAsync(
                     chatId: message.Chat.Id,
                     text: usage,
@@ -178,8 +174,8 @@ namespace TelegramBot
         {
             Console.WriteLine($"Received inline query from: {inlineQuery.From.Id}");
 
-            InlineQueryResultBase[] results = {
-                // displayed result
+            InlineQueryResultBase[] results =
+            {
                 new InlineQueryResultArticle(
                     id: "3",
                     title: "TgBots",
@@ -199,12 +195,14 @@ namespace TelegramBot
 
         private static async Task BotOnChosenInlineResultReceived(ChosenInlineResult chosenInlineResult)
         {
-            await new Task(() => Console.WriteLine($"Received inline result: {chosenInlineResult.ResultId}"));
+            var resultReceived = new Task(() => Console.WriteLine($"Received inline result: {chosenInlineResult.ResultId}"));
+            await resultReceived;
         }
-        
+
         private static async Task UnknownUpdateHandlerAsync(Update update)
         {
-            await new Task(() => Console.WriteLine($"Unknown update type: {update.Type}"));
+             var unknownUpdate = new Task(() => Console.WriteLine($"Unknown update type: {update.Type}"));
+             await unknownUpdate;
         }
     }
 }
