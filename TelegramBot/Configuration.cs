@@ -2,6 +2,6 @@
 {
     public static class Configuration
     {
-        public const string BotToken = "1799435878:AAG2PkXn1VIDw2n2qNAkiXSQv3JDxb9YcYQ";
+        public const string BotToken = "1799435878:AAGK-o2S1nQQr-6Ux5P8u0VWYk-bY9WwqTc";
     }
 }
