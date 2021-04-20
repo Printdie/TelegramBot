@@ -21,15 +21,11 @@ namespace TelegramBot
             _botClient.StopReceiving();
         }
         
-        private static async void Bot_OnMessage(object sender, MessageEventArgs e)
+        private static async void Bot_OnMessage(object sender, MessageEventArgs messageEvent)
         {
-            if (e.Message.Text == null) return;
-            Console.WriteLine($"Received a text message in chat {e.Message.Chat.Id}.");
-
-            await _botClient.SendTextMessageAsync(
-                chatId: e.Message.Chat,
-                text: "You said:\n" + e.Message.Text
-            );
+            if (messageEvent.Message.Text == null) return;
+            Console.WriteLine($"Received a text message in chat {messageEvent.Message.Chat.Id}.");
+            await _botClient.SendTextMessageAsync(messageEvent.Message.Chat, "You said:\n" + messageEvent.Message.Text);
         }
     }
 }
