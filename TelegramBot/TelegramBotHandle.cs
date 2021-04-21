@@ -179,9 +179,7 @@ namespace TelegramBot
                 new InlineQueryResultArticle(
                     id: "3",
                     title: "TgBots",
-                    inputMessageContent: new InputTextMessageContent(
-                        "hello"
-                    )
+                    inputMessageContent: new InputTextMessageContent("hello")
                 )
             };
 
