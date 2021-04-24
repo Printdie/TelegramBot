@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Args;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
@@ -19,74 +21,77 @@ namespace TelegramBot
         public static async Task Main()
         {
             Bot = new TelegramBotClient(Configuration.BotToken);
-
             var me = await Bot.GetMeAsync();
+            var cancellationToken = new CancellationTokenSource();
             Console.Title = me.Username;
+            
+            Bot.StartReceiving(
+                new DefaultUpdateHandler(HandleUpdateAsync, HandleErrorAsync),
+                cancellationToken.Token
+            );
 
-            Bot.OnMessage += BotOnMessageReceived;
-            Bot.OnMessageEdited += BotOnMessageReceived;
-            Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
-            Bot.OnInlineQuery += BotOnInlineQueryReceived;
-            Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
-            Bot.OnReceiveError += BotOnReceiveError;
-
-            Bot.StartReceiving(Array.Empty<UpdateType>());
             Console.WriteLine($"Start listening for @{me.Username}");
-
             Console.ReadLine();
-            Bot.StopReceiving();
+            cancellationToken.Cancel();
         }
 
-        private static async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
+        private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            var message = messageEventArgs.Message;
-            if (message is not {Type: MessageType.Text}) return;
-
-            switch (message.Text.Split(' ').First())
+            var handler = update.Type switch
             {
-                case "/start":
-                    await Start(message);
-                    break;
-                // Send inline keyboard
-                case "/inline":
-                    await SendInlineKeyboard(message);
-                    break;
+                UpdateType.Message => BotOnMessageReceived(update.Message),
+                UpdateType.EditedMessage => BotOnMessageReceived(update.Message),
+                UpdateType.CallbackQuery => BotOnCallbackQueryReceived(update.CallbackQuery),
+                UpdateType.InlineQuery => BotOnInlineQueryReceived(update.InlineQuery),
+                UpdateType.ChosenInlineResult => BotOnChosenInlineResultReceived(update.ChosenInlineResult),
+                _ => UnknownUpdateHandlerAsync(update)
+            };
 
-                // send custom keyboard
-                case "/keyboard":
-                    await SendReplyKeyboard(message);
-                    break;
-
-                // send a photo
-                case "/photo":
-                    await SendDocument(message);
-                    break;
-
-                // request location or contact
-                case "/request":
-                    await RequestContactAndLocation(message);
-                    break;
-
-                default:
-                    await Usage(message);
-                    break;
+            try
+            {
+                await handler;
             }
-
-            static async Task Start(Message message)
+            
+            catch (Exception exception)
             {
-                var replyKeyboardMarkup = new ReplyKeyboardMarkup(
-                    new[]
-                    {
-                        new KeyboardButton[] { "Правила стажировки", "Доступные стажировки" },
-                    },
-                    resizeKeyboard: true
-                );
+                await HandleErrorAsync(botClient, exception, cancellationToken);
+            }
+        }
 
+        private static async Task BotOnMessageReceived(Message message)
+        {
+            Console.WriteLine($"Receive message type: {message.Type}");
+            if (message.Type != MessageType.Text) return;
+
+            var action = message.Text.Split(' ').First() switch
+            {
+                "/start" => StartMessage(message),
+                _ => StartMessage(message)
+            };
+            
+            await action;
+            
+            static async Task StartMessage(Message message)
+            {
+                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+
+                var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                {
+                    new[] {InlineKeyboardButton.WithCallbackData("Доступные стажировки", "/internships")},
+                    new[] {InlineKeyboardButton.WithCallbackData("FAQ", "/faq")},
+                    new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")},
+                    new[] {InlineKeyboardButton.WithCallbackData("Мои заявки", "/reqests")}
+                });
+                
                 await Bot.SendTextMessageAsync(
                     chatId: message.Chat.Id,
-                    text: "fffg",
-                    replyMarkup: replyKeyboardMarkup
-
+                    text:  GoogleSheetsInterference.GetHelloMessage()
+                );
+                
+                await Bot.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    text: "Мои команды:",
+                    replyMarkup: inlineKeyboard
                 );
             }
             
@@ -95,9 +100,6 @@ namespace TelegramBot
             static async Task SendInlineKeyboard(Message message)
             {
                 await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-                // Simulate longer running task
-                await Task.Delay(500);
 
                 var inlineKeyboard = new InlineKeyboardMarkup(new[]
                 {
@@ -124,7 +126,7 @@ namespace TelegramBot
             static async Task SendReplyKeyboard(Message message)
             {
                 var replyKeyboardMarkup = new ReplyKeyboardMarkup(
-                    new KeyboardButton[][]
+                    new []
                     {
                         new KeyboardButton[] { "1.1", "1.2" },
                         new KeyboardButton[] { "2.1", "2.2" },
@@ -140,12 +142,12 @@ namespace TelegramBot
                 );
             }
 
-            static async Task SendDocument(Message message)
+            static async Task SendFile(Message message)
             {
                 await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
 
                 const string filePath = @"Files/tux.png";
-                using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var fileName = filePath.Split(Path.DirectorySeparatorChar).Last();
                 await Bot.SendPhotoAsync(
                     chatId: message.Chat.Id,
@@ -171,6 +173,7 @@ namespace TelegramBot
             static async Task Usage(Message message)
             {
                 const string usage = "Usage:\n" +
+                                        "/start" +
                                         "/inline   - send inline keyboard\n" +
                                         "/keyboard - send custom keyboard\n" +
                                         "/photo    - send a photo\n" +
@@ -184,26 +187,81 @@ namespace TelegramBot
         }
 
         // Process Inline Keyboard callback data
-        private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
+        private static async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
         {
-            var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            var baseKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Доступные стажировки", "/internships")},
+                new[] {InlineKeyboardButton.WithCallbackData("FAQ", "/faq")},
+                new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")},
+                new[] {InlineKeyboardButton.WithCallbackData("Мои заявки", "/reqests")}
+            });
+
+            var alternativeKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Назад", "/home")}
+            });
+            
+            switch (callbackQuery.Data)
+            {
+                case "/rules":
+                {
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: GoogleSheetsInterference.GetRules(),
+                        replyMarkup: baseKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/faq":
+                {
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: GoogleSheetsInterference.GetFAQ(),
+                        replyMarkup: baseKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/home":
+                {
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "Мои команды:",
+                        replyMarkup: baseKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/internships":
+                {
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "*-*",
+                        replyMarkup: baseKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+            }
 
             await Bot.AnswerCallbackQueryAsync(
-                callbackQueryId: callbackQuery.Id,
-                text: $"Received {callbackQuery.Data}"
+                callbackQuery.Id,
+                $"Received {callbackQuery.Data}"
             );
 
+            /*
             await Bot.SendTextMessageAsync(
-                chatId: callbackQuery.Message.Chat.Id,
-                text: $"Received {callbackQuery.Data}"
-            );
+                callbackQuery.Message.Chat.Id,
+                $"Received {callbackQuery.Data}"
+            );*/
         }
 
         #region Inline Mode
 
-        private static async void BotOnInlineQueryReceived(object sender, InlineQueryEventArgs inlineQueryEventArgs)
+        private static async Task BotOnInlineQueryReceived(InlineQuery inlineQuery)
         {
-            Console.WriteLine($"Received inline query from: {inlineQueryEventArgs.InlineQuery.From.Id}");
+            Console.WriteLine($"Received inline query from: {inlineQuery.From.Id}");
 
             InlineQueryResultBase[] results = {
                 // displayed result
@@ -215,27 +273,36 @@ namespace TelegramBot
                     )
                 )
             };
+
             await Bot.AnswerInlineQueryAsync(
-                inlineQueryId: inlineQueryEventArgs.InlineQuery.Id,
-                results: results,
+                inlineQuery.Id,
+                results,
                 isPersonal: true,
                 cacheTime: 0
             );
         }
 
-        private static void BotOnChosenInlineResultReceived(object sender, ChosenInlineResultEventArgs chosenInlineResultEventArgs)
+        private static async Task BotOnChosenInlineResultReceived(ChosenInlineResult chosenInlineResult)
         {
-            Console.WriteLine($"Received inline result: {chosenInlineResultEventArgs.ChosenInlineResult.ResultId}");
+            Console.WriteLine($"Received inline result: {chosenInlineResult.ResultId}");
         }
 
         #endregion
 
-        private static void BotOnReceiveError(object sender, ReceiveErrorEventArgs receiveErrorEventArgs)
+        private static async Task UnknownUpdateHandlerAsync(Update update)
         {
-            Console.WriteLine("Received error: {0} — {1}",
-                receiveErrorEventArgs.ApiRequestException.ErrorCode,
-                receiveErrorEventArgs.ApiRequestException.Message
-            );
+            Console.WriteLine($"Unknown update type: {update.Type}");
+        }
+
+        public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        {
+            var errorMessage = exception switch
+            {
+                ApiRequestException apiRequestException => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                _ => exception.ToString()
+            };
+
+            Console.WriteLine(errorMessage);
         }
     }
 }
