@@ -61,6 +61,9 @@ namespace TelegramBot
                 _ => UnknownUpdateHandlerAsync(update)
             };
 
+
+            Console.WriteLine(update.Type);
+            
             try
             {
                 await handler;
@@ -79,6 +82,8 @@ namespace TelegramBot
 
             if (IsRequest)
             {
+                Console.WriteLine("Зашел в реквест");
+                
                 if (Count == -1)
                 {
                     IsRequest = false;
@@ -385,6 +390,7 @@ namespace TelegramBot
                 {
                     ListName = "Java Разработчик";
                     Count = 7;
+                    IsRequest = true;
                     
                     await Bot.SendTextMessageAsync(
                         chatId: callbackQuery.Message.Chat.Id,
