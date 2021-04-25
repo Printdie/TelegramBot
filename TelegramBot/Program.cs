@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -86,6 +88,7 @@ namespace TelegramBot
                 await Bot.SendTextMessageAsync(
                     chatId: message.Chat.Id,
                     text:  GoogleSheetsInterference.GetHelloMessage()
+                    //text:  "*Hello*"
                 );
                 
                 await Bot.SendTextMessageAsync(
@@ -97,7 +100,7 @@ namespace TelegramBot
             
             // Send inline keyboard
             // You can process responses in BotOnCallbackQueryReceived handler
-            static async Task SendInlineKeyboard(Message message)
+            /*static async Task SendInlineKeyboard(Message message)
             {
                 await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
@@ -183,7 +186,7 @@ namespace TelegramBot
                     text: usage,
                     replyMarkup: new ReplyKeyboardRemove()
                 );
-            }
+            }*/
         }
 
         // Process Inline Keyboard callback data
@@ -201,6 +204,15 @@ namespace TelegramBot
             {
                 new[] {InlineKeyboardButton.WithCallbackData("Назад", "/home")}
             });
+
+            //var internships = GoogleSheetsInterference.Get....
+            var internships = new Dictionary<string, string>
+            {
+                {"a", "a"},
+                {"b", "b"},
+                {"c", "c"},
+                {"d", "d"}
+            };
             
             switch (callbackQuery.Data)
             {
@@ -209,6 +221,7 @@ namespace TelegramBot
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
                         text: GoogleSheetsInterference.GetRules(),
+                        //text: "*rules*",
                         replyMarkup: baseKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
@@ -218,7 +231,8 @@ namespace TelegramBot
                 {
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
-                        text: GoogleSheetsInterference.GetFAQ(),
+                        //text: "*faq*",
+                        text: GoogleSheetsInterference.GetFaq(),
                         replyMarkup: baseKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
@@ -236,10 +250,19 @@ namespace TelegramBot
                 
                 case "/internships":
                 {
+                    var text = internships.Count == 0 
+                        ? "К сожалению, доступных стажировок не найдено. Обязательно возвращайтесь позже."
+                        : "В данный момент имеются следующие направления стажировок:\n\n";
+
+                    foreach (var internshipsKey in internships.Keys)
+                    {
+                        text += $"{internships[internshipsKey]} {internshipsKey}";
+                    }
+                    
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
-                        text: "*-*",
-                        replyMarkup: baseKeyboard,
+                        text: text,
+                        replyMarkup: alternativeKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
                 }
@@ -249,12 +272,6 @@ namespace TelegramBot
                 callbackQuery.Id,
                 $"Received {callbackQuery.Data}"
             );
-
-            /*
-            await Bot.SendTextMessageAsync(
-                callbackQuery.Message.Chat.Id,
-                $"Received {callbackQuery.Data}"
-            );*/
         }
 
         #region Inline Mode

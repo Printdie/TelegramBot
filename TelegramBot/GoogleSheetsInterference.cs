@@ -11,25 +11,25 @@ using Google.Apis.Sheets.v4.Data;
 
 namespace TelegramBot
 {
-    static class GoogleSheetsInterference
+    internal static class GoogleSheetsInterference
     {
-        public static readonly string spreadsheetId = "1Ekhou8bS4jEZOjVnotTZowA6HoR1XhB5AhMq8xqrCBQ";
-        private static readonly SheetsService service = CreateService();
+        private const string SpreadsheetId = "1Ekhou8bS4jEZOjVnotTZowA6HoR1XhB5AhMq8xqrCBQ";
+        private static readonly SheetsService Service = CreateService();
 
         private static SheetsService CreateService()
         {
-            string[] Scopes = {SheetsService.Scope.Spreadsheets, "https://www.googleapis.com/auth/cloud-platform"};
+            string[] scopes = {SheetsService.Scope.Spreadsheets, "https://www.googleapis.com/auth/cloud-platform"};
             UserCredential credential;
-            var AppName = "TestGS2App";
-            var crdsPath = "credentials.json";
-
-            using (var stream = new FileStream(crdsPath, FileMode.Open, FileAccess.Read))
+            const string appName = "TestGS2App";
+            const string credentialsJson = "./credentials.json";
+            
+            using (var stream = new FileStream(credentialsJson, FileMode.Open, FileAccess.Read))
             {
-                string credPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+                var credPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
 
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
-                    Scopes,
+                    scopes,
                     "user",
                     CancellationToken.None,
                     new FileDataStore(credPath, true)).Result;
@@ -38,14 +38,14 @@ namespace TelegramBot
             return new SheetsService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
-                ApplicationName = AppName,
+                ApplicationName = appName,
             });
         }
 
         public static IList<IList<object>> GetDataFromList(string sheetName, string cellRange)
         {
             var range = sheetName + cellRange;
-            var request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+            var request = Service.Spreadsheets.Values.Get(SpreadsheetId, range);
             var response = request.Execute();
 
             return response.Values;
@@ -53,9 +53,9 @@ namespace TelegramBot
 
         public static void AppendList(string sheetName, IList<object> data)
         {
-            var range = string.Format("{0}!A:E", sheetName);
+            var range = $"{sheetName}!A:E";
             var valueRange = new ValueRange {Values = new List<IList<object>> {data}};
-            var append = service.Spreadsheets.Values.Append(valueRange, spreadsheetId, range);
+            var append = Service.Spreadsheets.Values.Append(valueRange, SpreadsheetId, range);
 
             append.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.RAW;
             append.Execute();
@@ -63,10 +63,10 @@ namespace TelegramBot
 
         public static IList<IList<object>> GetStringById(string sheetName, string searchedId)
         {
-            var rowArray = GetDataFromList("A", spreadsheetId);
+            var rowArray = GetDataFromList("A", SpreadsheetId);
             var neededRow = 0;
 
-            for (int i = 0; i < rowArray.Count; i++)
+            for (var i = 0; i < rowArray.Count; i++)
             {
                 if (rowArray[i].ToString() == searchedId)
                     neededRow = i + 2;
@@ -77,8 +77,7 @@ namespace TelegramBot
             return GetDataFromList(sheetName, range);
         }
 
-        ///
-        public static void CreateList(string sheetName, string[] properties) //готов
+        public static void CreateList(string sheetName, string[] properties)
         {
             if (!CheckMissingListName(sheetName))
                 throw new ArgumentException();
@@ -88,7 +87,7 @@ namespace TelegramBot
             {
                 Requests = new List<Request> {new Request {AddSheet = addSheetRequest}}
             };
-            var batchUpdateRequest = service.Spreadsheets.BatchUpdate(batchUpdateSpreadsheetRequest, spreadsheetId);
+            var batchUpdateRequest = Service.Spreadsheets.BatchUpdate(batchUpdateSpreadsheetRequest, SpreadsheetId);
 
             batchUpdateRequest.Execute();
             /*var properties = ParseProperties(GetDataFromList("Properties", "!A2:A7"));*/
@@ -98,13 +97,13 @@ namespace TelegramBot
 
         private static bool CheckMissingListName(string sheetName)
         {
-            var spreadSheets = service.Spreadsheets.Get(spreadsheetId).Execute();
+            var spreadSheets = Service.Spreadsheets.Get(SpreadsheetId).Execute();
             return spreadSheets.Sheets.All(spreadSheet => spreadSheet.Properties.Title != sheetName);
         }
 
         public static List<string> OutputListNames()
         {
-            var spreadSheets = service.Spreadsheets.Get(spreadsheetId).Execute();
+            var spreadSheets = Service.Spreadsheets.Get(SpreadsheetId).Execute();
             return spreadSheets.Sheets.Select(spreadSheet => spreadSheet.Properties.Title).ToList();
         }
 
@@ -121,19 +120,19 @@ namespace TelegramBot
             return arr;
         }
 
-        public static void CreateListRules()
+        public static void CreateListTexts()
         {
-            var text = new string[]
+            var text = new []
             {
-                @"Правила приема:
-            1) Посмотрите доступные стажировки в нашем боте
-            2) Выберите интересующее Вас направление
-            3) Выполните тестовое задание по выбранному направлению
-            4) Последовательно заполните анкету на стажировку и прикрепите тестовое задание
+                @"Правила и порядок приема:
+            1) Посмотри доступные стажировки в нашем боте
+            2) Выбери интересующее теь направление
+            3) Выполни тестовое задание по выбранному направлению
+            4) Последовательно заполни анкету на стажировку и прикрепи тестовое задание
             5) Получите приглашение на встречу
             6) Пройдите интервью в компании
             7) Получите приглашение на стажировку
-            Что ждет на стажировке:
+            Что ждет тебя на стажировке:
                 — опытный наставник
                 — работа с реальными задачами
                 — использование передовых технологий
@@ -143,45 +142,43 @@ namespace TelegramBot
                 — профессиональное развитие
                 — яркие корпоративы
             При наличии вопросов обратитесь к FAQ или напишите нам на почту: nautrainee@naumen.ru",
-                @"! FAQ !
-Что будет на интервью?
+                @"1. Что будет на интервью?
 · кандидат рассказывает о себе: об учебе, в каких проектах участвовал, отвечает на дополнительные вопросы
 · задачки по направлению (аналитикам — на логику и системное мышление, тестировщикам — на внимательность и тест-кейсы)
 · подробное описание стажировки у нас и ответы на любые Ваши вопросы
-Совмещение стажировки с учебой.
+
+2. Совмещение стажировки с учебой.
 · важно уделять стажировке не менее 30 часов в неделю
 · график согласуется с руководителем
-Оплата стажировки.
+
+3. Оплата стажировки.
 · стажеры получают стипендию от 30 тысяч
 · оплата зависит от количества отработанных часов
-Что делать, если понравилось сразу несколько направлений?
+
+4. Что делать, если понравилось сразу несколько направлений?
 · решение тестового задания по каждому направлению поможет определиться с выбором
 · если выбор после прохождения тестов по каждому направлению не сделан, предлагаем написать нам на почту
-Если нет объявления об интересной мне вакансии?
+
+5. Если нет объявления об интересной мне вакансии?
 · отправляйте резюме, как только вакансия откроется, мы свяжемся с Вами
-Что делать после отправки тестового задания?
+
+6. Что делать после отправки тестового задания? 
 · ожидайте нашего приглашения на собеседование
-— Стажировка зачитывается за учебную практику.
-— Удаленный формат работы отсутствует: очень важно работать очно в команде.
+    
+— Стажировка зачитывается за учебную практику. 
+— Удаленный формат работы отсутствует: очень важно работать очно в команде. 
 — Лучших стажеров берем в штат на фулл-тайм работу или работу по индивидуальному графику.
 — Проверка тестовых заданий занимает некоторое время, поэтому будьте терпеливы.",
-                @"! Hello message !
-Нау-мяу! Я — NAU-TRAINEE бот. Я помогу тебе с выбором стажировки, объясню правила приема заявок, а также помогу связаться с работодателем! Используй следующие команды:
-",
-                @"! commands !
-                Для работы со мной используй следующие команды:
-                /internships - Доступные стажировки
-                /rules - Правила приёма
-                /FAQ - Ответы на часто задаваемые вопросы
-                /requests - Твои заявки на стажировку"
+                @"Нау-мяу! Я — NAU-TRAINEE бот. Я помогу тебе с выбором стажировки, объясню правила приема заявок, а также помогу связаться с работодателем! Используй следующие команды:
+"
             };
-            CreateList("Rules", text);
-        }
-
-        public static string GetCommands()
-        {
-            var str = ParseProperties(GetDataFromList("Rules", "!D1:D1"));
-            return str[0];
+            var localProperties = new [] {  "Правила приёма:", "F.A.Q.", "Hello message"  };
+            CreateList("BotTexts", localProperties);
+            var objectText = new object[3];
+            for (var i = 0; i < text.Length; i++)
+                objectText[i] = text[i];
+            
+            AppendList("BotTexts", objectText);
         }
 
         public static string GetRules()
@@ -190,7 +187,7 @@ namespace TelegramBot
             return str[0];
         }
 
-        public static string GetFAQ()
+        public static string GetFaq()
         {
             var str = ParseProperties(GetDataFromList("Rules", "!B1:B1"));
             return str[0];
