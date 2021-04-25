@@ -82,8 +82,6 @@ namespace TelegramBot
 
             if (IsRequest)
             {
-                Console.WriteLine("Зашел в реквест");
-                
                 if (Count == -1)
                 {
                     IsRequest = false;
@@ -103,12 +101,14 @@ namespace TelegramBot
                 {
                     if (Count == 7)
                     {
+                        Console.WriteLine("Первое вхожедние");
                         Data = new List<object> {message.Chat.Username, message.Date.ToString(CultureInfo.InvariantCulture)};
-                        Count -= 2;
+                        Count = 5;
                     }
 
-                
                     Data.Add(message.Text);
+                    
+                    Console.WriteLine(Data[2].ToString());
 
                     await Bot.SendTextMessageAsync(
                         chatId: message.Chat.Id,
