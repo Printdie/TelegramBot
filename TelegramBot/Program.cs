@@ -22,7 +22,7 @@ namespace TelegramBot
         private static List<object> Data = new List<object>();
         private static string ListName;
 
-        private static List<string> Props = new List<string>()
+        private static string[] Props = new[]
         {
             "Опиши свои навыки:",
             "Введи свой email:",
@@ -108,7 +108,7 @@ namespace TelegramBot
 
                     Data.Add(message.Text);
                     
-                    Console.WriteLine(Data[2].ToString());
+                    Console.WriteLine(Count);
 
                     await Bot.SendTextMessageAsync(
                         chatId: message.Chat.Id,
