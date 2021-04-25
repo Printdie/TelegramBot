@@ -22,7 +22,7 @@ namespace TelegramBot
             UserCredential credential;
             const string appName = "TestGS2App";
             const string credentialsJson = "./credentials.json";
-            
+
             using (var stream = new FileStream(credentialsJson, FileMode.Open, FileAccess.Read))
             {
                 var credPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
@@ -119,11 +119,28 @@ namespace TelegramBot
 
             return arr;
         }
+        
+        public static string GetRules()
+        {
+            var str = ParseProperties(GetDataFromList("BotTexts", "!A2:A2"));
+            return str[0];
+        }
 
+        public static string GetFaq()
+        {
+            var str = ParseProperties(GetDataFromList("BotTexts", "!B2:B2"));
+            return str[0];
+        }
+
+        public static string GetHelloMessage()
+        {
+            var str = ParseProperties(GetDataFromList("BotTexts", "!C2:C2"));
+            return str[0];
+        }
+        
         public static void CreateListTexts()
         {
-            var text = new []
-            {
+            var text = new[] {
                 @"Правила и порядок приема:
             1) Посмотри доступные стажировки в нашем боте
             2) Выбери интересующее теь направление
@@ -172,31 +189,10 @@ namespace TelegramBot
                 @"Нау-мяу! Я — NAU-TRAINEE бот. Я помогу тебе с выбором стажировки, объясню правила приема заявок, а также помогу связаться с работодателем! Используй следующие команды:
 "
             };
-            var localProperties = new [] {  "Правила приёма:", "F.A.Q.", "Hello message"  };
+            var localProperties = new[] {"Rules", "FAQ", "HelloMessage"};
             CreateList("BotTexts", localProperties);
-            var objectText = new object[3];
-            for (var i = 0; i < text.Length; i++)
-                objectText[i] = text[i];
-            
+            var objectText = text.Cast<object>().ToList();
             AppendList("BotTexts", objectText);
-        }
-
-        public static string GetRules()
-        {
-            var str = ParseProperties(GetDataFromList("Rules", "!A1:A1"));
-            return str[0];
-        }
-
-        public static string GetFaq()
-        {
-            var str = ParseProperties(GetDataFromList("Rules", "!B1:B1"));
-            return str[0];
-        }
-
-        public static string GetHelloMessage()
-        {
-            var str = ParseProperties(GetDataFromList("Rules", "!C1:C1"));
-            return str[0];
         }
     }
 }
