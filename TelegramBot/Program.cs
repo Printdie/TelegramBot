@@ -58,9 +58,6 @@ namespace TelegramBot
                 UpdateType.ChosenInlineResult => BotOnChosenInlineResultReceived(update.ChosenInlineResult),
                 _ => UnknownUpdateHandlerAsync(update)
             };
-
-
-            Console.WriteLine(update.Type);
             
             try
             {
@@ -106,15 +103,12 @@ namespace TelegramBot
                 {
                     if (Count == 7)
                     {
-                        Console.WriteLine("Первое вхожедние");
                         Data = new List<object> {message.Chat.Username, message.Date.ToString(CultureInfo.InvariantCulture)};
                         Count = 5;
                     }
 
                     Data.Add(message.Text);
                     
-                    Console.WriteLine(Count);
-
                     await Bot.SendTextMessageAsync(
                         chatId: message.Chat.Id,
                         text:  $"{Props[Count]}"
