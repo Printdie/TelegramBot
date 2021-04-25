@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
+using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
@@ -205,6 +207,30 @@ namespace TelegramBot
                 new[] {InlineKeyboardButton.WithCallbackData("Назад", "/home")}
             });
             
+            var developerKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Отправить заявку", "/sendDeveloper")},
+                new[] {InlineKeyboardButton.WithCallbackData("Назад", "/internships")}
+            });
+            
+            var testerKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Отправить заявку", "/sendTester")},
+                new[] {InlineKeyboardButton.WithCallbackData("Назад", "/internships")}
+            });
+            
+            var analystKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Отправить заявку", "/sendAnalyst")},
+                new[] {InlineKeyboardButton.WithCallbackData("Назад", "/internships")}
+            });
+            
+            var writerKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                new[] {InlineKeyboardButton.WithCallbackData("Отправить заявку", "/sendWriter")},
+                new[] {InlineKeyboardButton.WithCallbackData("Назад", "/internships")}
+            });
+            
             var internships = GoogleSheetsInterference.GetAllAvailableInternships();
             
             switch (callbackQuery.Data)
@@ -251,6 +277,54 @@ namespace TelegramBot
                         chatId: callbackQuery.Message.Chat.Id,
                         text: text,
                         replyMarkup: internshipsKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+
+                case "/developer":
+                {
+                    var text = GoogleSheetsInterference.GetDescription("Java Разработчик");
+                    
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: text,
+                        replyMarkup: developerKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/tester":
+                {
+                    var text = GoogleSheetsInterference.GetDescription("Тестировщик");
+                    
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: text,
+                        replyMarkup: testerKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/analyst":
+                {
+                    var text = GoogleSheetsInterference.GetDescription("Аналитик");
+                    
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: text,
+                        replyMarkup: analystKeyboard,
+                        messageId: callbackQuery.Message.MessageId);
+                    break;
+                }
+                
+                case "/writer":
+                {
+                    var text = GoogleSheetsInterference.GetDescription("Технический Писатель");
+                    
+                    await Bot.EditMessageTextAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: text,
+                        replyMarkup: writerKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
                 }

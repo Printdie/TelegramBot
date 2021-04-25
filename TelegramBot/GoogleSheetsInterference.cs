@@ -201,5 +201,21 @@ namespace TelegramBot
             var objectText = text.Cast<object>().ToList();
             AppendList("BotTexts", objectText);
         }
+        
+        public static string GetDescription(string sheetName)
+        {
+            return ParseProperties(GetDataFromList(sheetName, "!I1:I1"))[0];
+        }
+        
+        public static Dictionary<string, string> ReadProperties()
+        {
+            var lists = GetDataFromList("Properties", "!A2:B");
+            return lists.ToDictionary(list => (string) list[0], list => (string) list[1]);
+        }
+
+        public static string[] ReadPropertyNames()
+        {
+            return ParseProperties(GetDataFromList("Properties", "!A2:A"));
+        }
     }
 }
