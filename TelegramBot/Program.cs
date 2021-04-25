@@ -138,7 +138,6 @@ namespace TelegramBot
                     new[] {InlineKeyboardButton.WithCallbackData("Доступные стажировки", "/internships")},
                     new[] {InlineKeyboardButton.WithCallbackData("FAQ", "/faq")},
                     new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")},
-                    new[] {InlineKeyboardButton.WithCallbackData("Мои заявки", "/reqests")}
                 });
                 
                 await Bot.SendTextMessageAsync(
@@ -160,8 +159,7 @@ namespace TelegramBot
             {
                 new[] {InlineKeyboardButton.WithCallbackData("Доступные стажировки", "/internships")},
                 new[] {InlineKeyboardButton.WithCallbackData("FAQ", "/faq")},
-                new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")},
-                new[] {InlineKeyboardButton.WithCallbackData("Мои заявки", "/reqests")}
+                new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")}
             });
             
             var internshipsKeyboard = new InlineKeyboardMarkup(new[]
