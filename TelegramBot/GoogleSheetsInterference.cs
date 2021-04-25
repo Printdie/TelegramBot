@@ -138,6 +138,13 @@ namespace TelegramBot
             return str[0];
         }
         
+        public static Dictionary<string, string> GetAllAvailableInternships()
+        {
+            var lists = GetDataFromList("Settings", "!A2:C");
+            return lists.Where(list => (string) list[2] == "Open")
+                .ToDictionary(list => (string) list[0], list => (string) list[1]);
+        }
+        
         public static void CreateListTexts()
         {
             var text = new[] {

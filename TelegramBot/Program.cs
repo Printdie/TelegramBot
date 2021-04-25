@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -11,7 +8,6 @@ using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
@@ -199,20 +195,17 @@ namespace TelegramBot
                 new[] {InlineKeyboardButton.WithCallbackData("Правила приёма", "/rules")},
                 new[] {InlineKeyboardButton.WithCallbackData("Мои заявки", "/reqests")}
             });
-
-            var alternativeKeyboard = new InlineKeyboardMarkup(new[]
+            
+            var internshipsKeyboard = new InlineKeyboardMarkup(new[]
             {
+                new[] {InlineKeyboardButton.WithCallbackData("Java Разаработчик", "/developer")},
+                new[] {InlineKeyboardButton.WithCallbackData("Тестировщик", "/tester")},
+                new[] {InlineKeyboardButton.WithCallbackData("Аналитик", "/analyst")},
+                new[] {InlineKeyboardButton.WithCallbackData("Технический Писатель", "/writer")},
                 new[] {InlineKeyboardButton.WithCallbackData("Назад", "/home")}
             });
-
-            //var internships = GoogleSheetsInterference.Get....
-            var internships = new Dictionary<string, string>
-            {
-                {"a", "a"},
-                {"b", "b"},
-                {"c", "c"},
-                {"d", "d"}
-            };
+            
+            var internships = GoogleSheetsInterference.GetAllAvailableInternships();
             
             switch (callbackQuery.Data)
             {
@@ -252,17 +245,12 @@ namespace TelegramBot
                 {
                     var text = internships.Count == 0 
                         ? "К сожалению, доступных стажировок не найдено. Обязательно возвращайтесь позже."
-                        : "В данный момент имеются следующие направления стажировок:\n\n";
+                        : "В данный момент имеются следующие направления стажировок:\n";
 
-                    foreach (var internshipsKey in internships.Keys)
-                    {
-                        text += $"{internships[internshipsKey]} {internshipsKey}";
-                    }
-                    
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
                         text: text,
-                        replyMarkup: alternativeKeyboard,
+                        replyMarkup: internshipsKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
                 }
