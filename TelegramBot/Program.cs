@@ -21,9 +21,7 @@ namespace TelegramBot
         private static int Count = 7;
         private static List<object> Data = new List<object>();
         private static string ListName;
-
-        private static string[] Props = new[]
-        {
+        private static readonly string[] Props = new[] {
             "Опиши свои навыки:",
             "Введи свой email:",
             "Введи свой номер телефона:",
@@ -31,7 +29,6 @@ namespace TelegramBot
             "Введи ФИО:",
             "Опиши свои компетенции:"
         };
-        
         
         public static async Task Main()
         {
@@ -89,10 +86,17 @@ namespace TelegramBot
                     Count = 7;
                     GoogleSheetsInterference.AppendList(ListName, Data);
                     
+                    var keyboard = new InlineKeyboardMarkup(new[]
+                    {
+                        new[] {InlineKeyboardButton.WithCallbackData("Назад", "/internships")}
+                    });
+                    
                     await Bot.SendTextMessageAsync(
                         chatId: message.Chat.Id,
-                        text:  $"Заявка на вакансию {ListName} успешно отправлена!"
+                        text:  $"Заявка на вакансию {ListName} успешно отправлена!",
+                        replyMarkup: keyboard
                     );
+                    
                     
                     Data = new List<object>();
                     ListName = null;
@@ -146,7 +150,6 @@ namespace TelegramBot
                 await Bot.SendTextMessageAsync(
                     chatId: message.Chat.Id,
                     text:  GoogleSheetsInterference.GetHelloMessage()
-                    //text:  "*Hello*"
                 );
                 
                 await Bot.SendTextMessageAsync(
@@ -155,99 +158,8 @@ namespace TelegramBot
                     replyMarkup: inlineKeyboard
                 );
             }
-            
-            // Send inline keyboard
-            // You can process responses in BotOnCallbackQueryReceived handler
-            /*static async Task SendInlineKeyboard(Message message)
-            {
-                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-                var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
-                    // first row
-                    new []
-                    {
-                        InlineKeyboardButton.WithCallbackData("1.1", "11"),
-                        InlineKeyboardButton.WithCallbackData("1.2", "12"),
-                    },
-                    // second row
-                    new []
-                    {
-                        InlineKeyboardButton.WithCallbackData("2.1", "21"),
-                        InlineKeyboardButton.WithCallbackData("2.2", "22"),
-                    }
-                });
-                await Bot.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: "Choose",
-                    replyMarkup: inlineKeyboard
-                );
-            }
-
-            static async Task SendReplyKeyboard(Message message)
-            {
-                var replyKeyboardMarkup = new ReplyKeyboardMarkup(
-                    new []
-                    {
-                        new KeyboardButton[] { "1.1", "1.2" },
-                        new KeyboardButton[] { "2.1", "2.2" },
-                    },
-                    resizeKeyboard: true
-                );
-
-                await Bot.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: "Choose",
-                    replyMarkup: replyKeyboardMarkup
-
-                );
-            }
-
-            static async Task SendFile(Message message)
-            {
-                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
-
-                const string filePath = @"Files/tux.png";
-                await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var fileName = filePath.Split(Path.DirectorySeparatorChar).Last();
-                await Bot.SendPhotoAsync(
-                    chatId: message.Chat.Id,
-                    photo: new InputOnlineFile(fileStream, fileName),
-                    caption: "Nice Picture"
-                );
-            }
-
-            static async Task RequestContactAndLocation(Message message)
-            {
-                var requestReplyKeyboard = new ReplyKeyboardMarkup(new[]
-                {
-                    KeyboardButton.WithRequestLocation("Location"),
-                    KeyboardButton.WithRequestContact("Contact"),
-                });
-                await Bot.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: "Who or Where are you?",
-                    replyMarkup: requestReplyKeyboard
-                );
-            }
-
-            static async Task Usage(Message message)
-            {
-                const string usage = "Usage:\n" +
-                                        "/start" +
-                                        "/inline   - send inline keyboard\n" +
-                                        "/keyboard - send custom keyboard\n" +
-                                        "/photo    - send a photo\n" +
-                                        "/request  - request location or contact";
-                await Bot.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: usage,
-                    replyMarkup: new ReplyKeyboardRemove()
-                );
-            }*/
         }
-
-        // Process Inline Keyboard callback data
+        
         private static async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery)
         {
             var baseKeyboard = new InlineKeyboardMarkup(new[]
@@ -403,16 +315,40 @@ namespace TelegramBot
                 
                 case "/sendTester":
                 {
+                    ListName = "Тестировщик";
+                    Count = 7;
+                    IsRequest = true;
+                    
+                    await Bot.SendTextMessageAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "Загрузи тестовое задание на Google Drive и отправь мне ссылку на него:"
+                    );
                     break;
                 }
 
                 case "/sendAnalyst":
                 {
+                    ListName = "Аналитик";
+                    Count = 7;
+                    IsRequest = true;
+                    
+                    await Bot.SendTextMessageAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "Загрузи тестовое задание на Google Drive и отправь мне ссылку на него:"
+                    );
                     break;
                 }
 
                 case "/sendWriter":
                 {
+                    ListName = "Технический Писатель";
+                    Count = 7;
+                    IsRequest = true;
+                    
+                    await Bot.SendTextMessageAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "Загрузи тестовое задание на Google Drive и отправь мне ссылку на него:"
+                    );
                     break;
                 }
 
@@ -423,9 +359,7 @@ namespace TelegramBot
                 $"Received {callbackQuery.Data}"
             );
         }
-
-        #region Inline Mode
-
+        
         private static async Task BotOnInlineQueryReceived(InlineQuery inlineQuery)
         {
             Console.WriteLine($"Received inline query from: {inlineQuery.From.Id}");
@@ -454,14 +388,12 @@ namespace TelegramBot
             Console.WriteLine($"Received inline result: {chosenInlineResult.ResultId}");
         }
 
-        #endregion
-
         private static async Task UnknownUpdateHandlerAsync(Update update)
         {
             Console.WriteLine($"Unknown update type: {update.Type}");
         }
 
-        public static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        private static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
             var errorMessage = exception switch
             {
