@@ -1,5 +1,6 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,7 +10,6 @@ using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
@@ -17,7 +17,21 @@ namespace TelegramBot
     public static class Program
     {
         private static TelegramBotClient Bot;
+        private static bool IsRequest;
+        private static int Count = 7;
+        private static List<object> Data = new List<object>();
+        private static string ListName;
 
+        private static List<string> Props = new List<string>()
+        {
+            "Опиши свои навыки:",
+            "Введи свой email:",
+            "Введи свой номер телефона:",
+            "Введи город, в который ты хочешь подать заявку:",
+            "Введи ФИО:"
+        };
+        
+        
         public static async Task Main()
         {
             Bot = new TelegramBotClient(Configuration.BotToken);
@@ -63,13 +77,53 @@ namespace TelegramBot
             Console.WriteLine($"Receive message type: {message.Type}");
             if (message.Type != MessageType.Text) return;
 
-            var action = message.Text.Split(' ').First() switch
+            if (IsRequest)
             {
-                "/start" => StartMessage(message),
-                _ => StartMessage(message)
-            };
+                if (Count == -1)
+                {
+                    IsRequest = false;
+                    Count = 7;
+                    GoogleSheetsInterference.AppendList(ListName, Data);
+                    
+                    await Bot.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text:  $"Заявка на вакансию {ListName} успешно отправлена!"
+                    );
+                    
+                    Data = new List<object>();
+                    ListName = null;
+                }
+
+                else
+                {
+                    if (Count == 7)
+                    {
+                        Data = new List<object> {message.Chat.Username, message.Date.ToString(CultureInfo.InvariantCulture)};
+                        Count -= 2;
+                    }
+
+                
+                    Data.Add(message.Text);
+
+                    await Bot.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text:  $"{Props[Count]}"
+                    );
+                
+                    Count--;
+                }
+            }
+
+            else
+            {
+                var action = message.Text.Split(' ').First() switch
+                {
+                    "/start" => StartMessage(message),
+                    _ => StartMessage(message)
+                };
             
-            await action;
+                await action;
+            }
             
             static async Task StartMessage(Message message)
             {
@@ -240,7 +294,6 @@ namespace TelegramBot
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
                         text: GoogleSheetsInterference.GetRules(),
-                        //text: "*rules*",
                         replyMarkup: baseKeyboard,
                         messageId: callbackQuery.Message.MessageId);
                     break;
@@ -250,7 +303,6 @@ namespace TelegramBot
                 {
                     await Bot.EditMessageTextAsync(
                         chatId: callbackQuery.Message.Chat.Id,
-                        //text: "*faq*",
                         text: GoogleSheetsInterference.GetFaq(),
                         replyMarkup: baseKeyboard,
                         messageId: callbackQuery.Message.MessageId);
@@ -328,6 +380,35 @@ namespace TelegramBot
                         messageId: callbackQuery.Message.MessageId);
                     break;
                 }
+
+                case "/sendDeveloper":
+                {
+                    ListName = "Java Разработчик";
+                    Count = 7;
+                    
+                    await Bot.SendTextMessageAsync(
+                        chatId: callbackQuery.Message.Chat.Id,
+                        text: "Загрузи тестовое задание на Google Drive и отправь мне ссылку на него:"
+                    );
+                    
+                    break;
+                }
+                
+                case "/sendTester":
+                {
+                    break;
+                }
+
+                case "/sendAnalyst":
+                {
+                    break;
+                }
+
+                case "/sendWriter":
+                {
+                    break;
+                }
+
             }
 
             await Bot.AnswerCallbackQueryAsync(
